@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentinels-IMS | Security Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>SENTINELS-IMS // AGENTIC SOC</h1>
+        <div id="lockdown-banner" class="hidden">CRITICAL: SYSTEM LOCKDOWN ACTIVE</div>
+    </header>
+    <main class="grid">
+        <section id="posture-card" class="card">
+            <h2>SYSTEM STATUS</h2>
+            <div class="stat-group">
+                <label>Strike Count:</label>
+                <span id="strike-display">0</span>/3
+            </div>
+            <div class="stat-group">
+                <label>Condition:</label>
+                <span id="status-display">STABLE</span>
+            </div>
+            <hr>
+            <button id="reset-btn" onclick="resetStrikes()">RESET SECURITY OVERRIDE</button>
+        </section>
+        <section class="card">
+            <h2>LIVE INGESTION FEED</h2>
+            <div class="table-container">
+                <table id="log-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Device</th>
+                            <th>Event Details</th>
+                            <th>Alert</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-body">
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

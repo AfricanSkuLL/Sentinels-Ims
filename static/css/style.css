@@ -1,0 +1,116 @@
+/* Sentinels-IMS Aesthetic: High-Contrast Security Dark Mode */
+
+body {
+    background-color: #0a0a0a;
+    color: #00ff41; /* Classic Terminal Green */
+    font-family: 'Courier New', Courier, monospace;
+    margin: 0;
+    padding: 20px;
+}
+
+header {
+    border-bottom: 2px solid #333;
+    margin-bottom: 30px;
+    padding-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+h1, h2 {
+    margin: 0;
+    letter-spacing: 2px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 25px;
+}
+
+.card {
+    background: #111;
+    border: 1px solid #00ff41;
+    padding: 20px;
+    border-radius: 4px;
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.1);
+}
+
+.stat-group {
+    margin: 15px 0;
+    font-size: 1.2em;
+}
+
+hr {
+    border: 0;
+    border-top: 1px solid #333;
+    margin: 20px 0;
+}
+
+button {
+    background-color: #00ff41;
+    color: #000;
+    border: none;
+    padding: 12px 20px;
+    font-family: inherit;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.3s;
+}
+
+button:hover {
+    background-color: #008f11;
+}
+
+/* Table Styling */
+.table-container {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    background: #222;
+    position: sticky;
+    top: 0;
+}
+
+th, td {
+    border: 1px solid #333;
+    padding: 12px;
+    text-align: left;
+    font-size: 0.9em;
+}
+
+/* Alert States */
+.alert-row {
+    color: #ff3e3e;
+    background: rgba(255, 62, 62, 0.05);
+}
+
+.locked-state {
+    border-color: #ff0000 !important;
+    background: #200 !important;
+    box-shadow: 0 0 25px rgba(255, 0, 0, 0.3) !important;
+}
+
+#lockdown-banner {
+    background: #ff0000;
+    color: white;
+    padding: 5px 15px;
+    font-weight: bold;
+    animation: blink 1s infinite;
+}
+
+.hidden { display: none; }
+
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
+}
