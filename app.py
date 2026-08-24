@@ -65,6 +65,13 @@ class TursoHTTPDB:
             return []
 
 
+def is_truthy(val):
+    """Helper function to parse booleans across Turso string responses and SQLite integers."""
+    if val is None:
+        return False
+    return str(val).strip().upper() in ["1", "TRUE", "YES"]
+
+
 if TURSO_URL and TURSO_TOKEN:
     # Production: Hosted Turso Cloud SQLite over HTTP
     db = TursoHTTPDB(TURSO_URL, TURSO_TOKEN)
@@ -170,7 +177,7 @@ def ingest():
     if not user_status:
         return jsonify({"error": "UNAUTHORIZED_NODE"}), 401
 
-    if user_status[0]["is_locked"]:
+    if is_truthy(user_status[0]["is_locked"]):
         return (
             jsonify(
                 {
@@ -203,7 +210,7 @@ def ingest():
         event_details,
     )
 
-    current_strike_count = user_status[0]["strike_count"]
+    current_strike_count = int(user_status[0]["strike_count"] or 0)
 
     if threat:
         severity = threat[0]["threat_severity"]
@@ -217,11 +224,11 @@ def ingest():
         updated_user = db.execute(
             "SELECT strike_count FROM users WHERE username = ?", "admin"
         )
-        current_strike_count = updated_user[0]["strike_count"]
+        current_strike_count = int(updated_user[0]["strike_count"] or 0)
 
         if current_strike_count >= 3:
             db.execute(
-                "UPDATE users SET is_locked = TRUE, last_strike_reason = ? WHERE username = ?",
+                "UPDATE users SET is_locked = 1, last_strike_reason = ? WHERE username = ?",
                 event_details,
                 "admin",
             )
@@ -263,14 +270,19 @@ def status():
         "SELECT datetime(timestamp, 'localtime') AS timestamp, device_name, event_details, alert_level FROM logs ORDER BY timestamp DESC LIMIT 50"
     )
 
-    return jsonify({"user": user_data[0], "logs": log_data}), 200
+    formatted_user = {
+        "strike_count": int(user_data[0]["strike_count"] or 0),
+        "is_locked": 1 if is_truthy(user_data[0]["is_locked"]) else 0,
+    }
+
+    return jsonify({"user": formatted_user, "logs": log_data}), 200
 
 
 @app.route("/reset", methods=["POST"])
 def reset():
     """Administrative Reset: Restores security baseline and purges historical telemetry."""
     db.execute(
-        "UPDATE users SET strike_count = 0, is_locked = FALSE, last_strike_reason = NULL WHERE username = 'admin'"
+        "UPDATE users SET strike_count = 0, is_locked = 0, last_strike_reason = NULL WHERE username = 'admin'"
     )
     db.execute("DELETE FROM logs")
     return (
