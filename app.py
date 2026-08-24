@@ -1,19 +1,31 @@
 import os
+import shutil
 from flask import Flask, request, jsonify, render_template
 from cs50 import SQL
 
 app = Flask(__name__)
 
-# Ensure absolute file path resolution for Vercel/Serverless execution environments
+# --- VERCEL SERVERLESS DATABASE SETUP ---
+# Serverless root is read-only; copy/initialize SQLite DB inside writable /tmp
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "sentinel.db")
+READONLY_DB = os.path.join(BASE_DIR, "sentinel.db")
+DB_PATH = "/tmp/sentinel.db"
 
-# Initialize SQLite database instance
+if not os.path.exists(DB_PATH):
+    if os.path.exists(READONLY_DB):
+        shutil.copy(READONLY_DB, DB_PATH)
+        os.chmod(DB_PATH, 0o666)
+    else:
+        with open(DB_PATH, "w") as f:
+            pass
+        os.chmod(DB_PATH, 0o666)
+
+# Initialize CS50 SQL wrapper pointing to writable /tmp storage
 db = SQL(f"sqlite:///{DB_PATH}")
 
 
 def init_db():
-    """Ensures required tables and administrative state exist on launch."""
+    """Ensures required tables, threat patterns, and administrative node exist."""
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS users (
@@ -45,7 +57,8 @@ def init_db():
         )
     """
     )
-    # Seed default administrative node if absent
+
+    # Seed administrative user profile if missing
     admin = db.execute("SELECT id FROM users WHERE username = ?", "admin")
     if not admin:
         db.execute(
@@ -55,27 +68,41 @@ def init_db():
             False,
         )
 
+    # Seed baseline signature threat rules if missing
+    signatures = db.execute("SELECT id FROM threat_signatures LIMIT 1")
+    if not signatures:
+        db.execute(
+            "INSERT INTO threat_signatures (pattern_value, threat_severity) VALUES (?, ?)",
+            "/etc/shadow",
+            1,
+        )
+        db.execute(
+            "INSERT INTO threat_signatures (pattern_value, threat_severity) VALUES (?, ?)",
+            "rm -rf",
+            2,
+        )
 
-# Run database check on startup
+
+# Run schema initialization safely during boot
 try:
     init_db()
 except Exception as e:
-    print(f"Database initialization warning: {e}")
+    print(f"Database initialization status: {e}")
 
 
 @app.route("/", methods=["GET"])
 def index():
-    """Serves the main security control panel template."""
+    """Serves the main security control panel interface."""
     return render_template("index.html")
 
 
 @app.route("/ingest", methods=["POST"])
 def ingest():
     """
-    The Central SOC Controller: Receives pulses, checks for strikes,
-    and executes the 'Kill Switch' if 3 strikes are confirmed.
+    Central SOC Endpoint: Processes incoming node pulses, records logs,
+    evaluates signatures, and enforces automated account lockdowns.
     """
-    # 1. LOCKDOWN GATEKEEPER: Check if account exists and if it is already locked
+    # 1. LOCKDOWN GATEKEEPER: Verify admin status and firewall block state
     user_status = db.execute(
         "SELECT strike_count, is_locked FROM users WHERE username = ?", "admin"
     )
@@ -96,7 +123,7 @@ def ingest():
             403,
         )
 
-    # 2. DATA ACQUISITION: Parse JSON from the Inquisitor (Sensor)
+    # 2. TELEMETRY INGESTION: Parse payload from agent payload
     data = request.get_json()
     if not data:
         return jsonify({"error": "Invalid Data Packet"}), 400
@@ -105,7 +132,7 @@ def ingest():
     event_details = data.get("event_details", "Standard Pulse")
     alert_level = data.get("alert_level", 0)
 
-    # 3. LOGGING: Record the raw pulse with the correct alert level
+    # 3. LOG RECORDING: Store raw sensor telemetry
     db.execute(
         "INSERT INTO logs (device_name, event_details, alert_level) VALUES (?, ?, ?)",
         device,
@@ -113,26 +140,25 @@ def ingest():
         alert_level,
     )
 
-    # 4. THREAT MATCHING: Check against the Threat Database
+    # 4. SIGNATURE EVALUATION: Match payload against threat database
     threat = db.execute(
         "SELECT threat_severity FROM threat_signatures WHERE ? LIKE '%' || pattern_value || '%'",
         event_details,
     )
 
-    # Track live metric adjustments within this lifecycle frame
     current_strike_count = user_status[0]["strike_count"]
 
     if threat:
         severity = threat[0]["threat_severity"]
 
-        # 5. EXECUTE STRIKE: Increment the count in the database
+        # 5. EXECUTE STRIKE: Increment node violation count
         db.execute(
             "UPDATE users SET strike_count = strike_count + ? WHERE username = ?",
             severity,
             "admin",
         )
 
-        # 6. FINAL VALIDATION: Re-check if this strike triggered the 3-strike limit
+        # 6. ENFORCE LOCKDOWN: Evaluate if threshold breached (3 strikes)
         updated_user = db.execute(
             "SELECT strike_count FROM users WHERE username = ?", "admin"
         )
@@ -171,10 +197,7 @@ def ingest():
 
 @app.route("/status", methods=["GET"])
 def status():
-    """
-    Dashboard Synchronizer: Fetches administrative state and recent logs
-    to populate the UI feed.
-    """
+    """Dashboard Endpoint: Fetches administrative metrics and live telemetry logs."""
     user_data = db.execute(
         "SELECT strike_count, is_locked FROM users WHERE username = ?", "admin"
     )
@@ -190,10 +213,7 @@ def status():
 
 @app.route("/reset", methods=["POST"])
 def reset():
-    """
-    Administrative Override: Clears strike counts, lifts lockdowns,
-    and flushes historical telemetry data.
-    """
+    """Administrative Reset: Restores security baseline and purges historical telemetry."""
     db.execute(
         "UPDATE users SET strike_count = 0, is_locked = FALSE, last_strike_reason = NULL WHERE username = 'admin'"
     )
