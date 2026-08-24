@@ -25,7 +25,10 @@ function updateSecurityUI(user) {
 
     strikeDisplay.innerText = user.strike_count;
 
-    if (user.is_locked) {
+    // FIX: Explicitly check for numeric 1 or string "1" / true boolean
+    const isLocked = Number(user.is_locked) === 1 || user.is_locked === true;
+
+    if (isLocked) {
         statusDisplay.innerText = "LOCKDOWN ACTIVE";
         postureCard.classList.add('locked-state');
         banner.classList.remove('hidden');
@@ -39,6 +42,8 @@ function updateSecurityUI(user) {
 function updateLogTable(logs) {
     const tbody = document.getElementById('log-body');
     tbody.innerHTML = ''; // Clear existing rows
+
+    if (!logs || !Array.isArray(logs)) return;
 
     logs.forEach(log => {
         const tr = document.createElement('tr');
@@ -67,7 +72,7 @@ async function resetStrikes() {
 
             if (response.ok) {
                 alert("Security protocols restored.");
-                refreshDashboard();
+                await refreshDashboard();
             }
         } catch (error) {
             alert("Reset failed. Check SOC connection.");
@@ -75,6 +80,6 @@ async function resetStrikes() {
     }
 }
 
-// Initial update and periodic polling (Standard Web API)
+// Initial update and periodic polling
 refreshDashboard();
 setInterval(refreshDashboard, 5000);
