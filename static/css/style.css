@@ -34,6 +34,7 @@ h1, h2 {
     padding: 20px;
     border-radius: 4px;
     box-shadow: 0 0 15px rgba(0, 255, 65, 0.1);
+    transition: border-color 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .stat-group {
@@ -95,19 +96,27 @@ th, td {
 
 .locked-state {
     border-color: #ff0000 !important;
-    background: #200 !important;
-    box-shadow: 0 0 25px rgba(255, 0, 0, 0.3) !important;
+    background: #220000 !important;
+    box-shadow: 0 0 25px rgba(255, 0, 0, 0.4) !important;
 }
 
+/* Lockdown Banner - Animation ONLY triggers when NOT hidden */
 #lockdown-banner {
     background: #ff0000;
-    color: white;
+    color: #ffffff;
     padding: 5px 15px;
     font-weight: bold;
+}
+
+#lockdown-banner:not(.hidden) {
+    display: block;
     animation: blink 1s infinite;
 }
 
-.hidden { display: none; }
+/* Strict Utility Classes */
+.hidden {
+    display: none !important;
+}
 
 @keyframes blink {
     0% { opacity: 1; }
