@@ -3,7 +3,7 @@ import requests
 from datetime import datetime
 
 DEVICE_NAME = "SENTINEL_NODE_01"
-SOC_URL = "http://127.0.0.1:5000/ingest"
+SOC_URL = "https://sentinels-ims.vercel.app/ingest"
 
 def send_pulse(alert_level, details):
     """Formats and transmits security data to the central SOC endpoint."""

@@ -7,7 +7,7 @@ from datetime import datetime
 # CONFIGURATION                              #
 # ========================================== #
 DEVICE_NAME = "SENTINEL_NODE_01"
-SOC_URL = "http://127.0.0.1:5000/ingest"
+SOC_URL = "https://sentinels-ims.vercel.app/ingest"
 
 # ========================================== #
 # TELEMETRY TRANSMITTER                      #
