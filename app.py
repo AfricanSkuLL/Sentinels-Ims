@@ -83,7 +83,6 @@ else:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     READONLY_DB = os.path.join(BASE_DIR, "sentinel.db")
 
-    # Use Vercel's strict /tmp when running on Linux containers, otherwise use system temp dir on Windows
     if os.name == "nt":
         DB_PATH = os.path.join(tempfile.gettempdir(), "sentinel.db")
     else:
@@ -162,6 +161,23 @@ try:
     init_db()
 except Exception as e:
     print(f"Database initialization status: {e}")
+
+
+@app.after_request
+def add_no_cache_headers(response):
+    """Prevents Vercel Edge CDN and browsers from caching state responses."""
+    response.headers["Cache-Control"] = (
+        "no-store, no-cache, must-revalidate, max-age=0"
+    )
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+
+@app.route("/favicon.ico")
+def favicon():
+    """Silences 404 favicon logs."""
+    return "", 204
 
 
 @app.route("/", methods=["GET"])
@@ -276,9 +292,10 @@ def status():
         "SELECT datetime(timestamp, 'localtime') AS timestamp, device_name, event_details, alert_level FROM logs ORDER BY timestamp DESC LIMIT 50"
     )
 
+    raw_locked = user_data[0].get("is_locked")
     formatted_user = {
-        "strike_count": int(user_data[0]["strike_count"] or 0),
-        "is_locked": 1 if is_truthy(user_data[0]["is_locked"]) else 0,
+        "strike_count": int(user_data[0].get("strike_count") or 0),
+        "is_locked": 1 if is_truthy(raw_locked) else 0,
     }
 
     return jsonify({"user": formatted_user, "logs": log_data}), 200
