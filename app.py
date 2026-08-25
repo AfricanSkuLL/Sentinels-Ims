@@ -1,5 +1,6 @@
 import os
 import shutil
+import tempfile
 import requests
 from flask import Flask, request, jsonify, render_template
 
@@ -76,12 +77,17 @@ if TURSO_URL and TURSO_TOKEN:
     # Production: Hosted Turso Cloud SQLite over HTTP
     db = TursoHTTPDB(TURSO_URL, TURSO_TOKEN)
 else:
-    # Local Development: Fallback to local file or /tmp
+    # Local Development Fallback: Cross-platform temp path handling
     from cs50 import SQL
 
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     READONLY_DB = os.path.join(BASE_DIR, "sentinel.db")
-    DB_PATH = "/tmp/sentinel.db"
+
+    # Use Vercel's strict /tmp when running on Linux containers, otherwise use system temp dir on Windows
+    if os.name == "nt":
+        DB_PATH = os.path.join(tempfile.gettempdir(), "sentinel.db")
+    else:
+        DB_PATH = "/tmp/sentinel.db"
 
     if not os.path.exists(DB_PATH):
         if os.path.exists(READONLY_DB):
